@@ -25,6 +25,12 @@
     reload: yes
   tags: [rollback, opensearch_rollback, opensearch_sysctl_rollback]
 
+- name: Reset SELinux to enforcing
+  ansible.builtin.selinux:
+    policy: targeted
+    state: enforcing
+  tags: [rollback, opensearch_rollback, opensearch_selinux_rollback]
+
 - name: Remove OPENSEARCH_JAVA_HOME profile.d file
   ansible.builtin.file:
     path: /etc/profile.d/opensearch.sh
@@ -37,3 +43,22 @@
     state: absent
   delegate_to: localhost
   tags: [rollback, opensearch_rollback, opensearch_certs_rollback]
+
+- name: Stop and disable OpenSearch service
+  ansible.builtin.service:
+    name: opensearch
+    state: stopped
+    enabled: no
+  ignore_errors: yes
+  tags: [rollback, opensearch_rollback, opensearch_systemd_rollback]
+
+- name: Remove systemd unit file
+  ansible.builtin.file:
+    path: /etc/systemd/system/opensearch.service
+    state: absent
+  tags: [rollback, opensearch_rollback, opensearch_systemd_rollback]
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: yes
+  tags: [rollback, opensearch_rollback, opensearch_systemd_rollback]

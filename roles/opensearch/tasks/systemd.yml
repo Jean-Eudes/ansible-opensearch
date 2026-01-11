@@ -1,0 +1,21 @@
+---
+- name: Deploy systemd unit file
+  ansible.builtin.template:
+    src: opensearch.service.j2
+    dest: /etc/systemd/system/opensearch.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify: reload systemd
+  tags: [install, opensearch_install, opensearch_systemd]
+
+- name: Flush handlers to reload systemd
+  ansible.builtin.meta: flush_handlers
+  tags: [install, opensearch_install, opensearch_systemd]
+
+- name: Enable and start OpenSearch service
+  ansible.builtin.service:
+    name: opensearch
+    enabled: yes
+    state: started
+  tags: [install, opensearch_install, opensearch_systemd]

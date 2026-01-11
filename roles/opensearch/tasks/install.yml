@@ -42,6 +42,12 @@
     reload: yes
   tags: [install, opensearch_install, opensearch_sysctl]
 
+- name: Set SELinux to permissive
+  ansible.builtin.selinux:
+    policy: targeted
+    state: permissive
+  tags: [install, opensearch_install, opensearch_selinux]
+
 - name: Configure network.host in opensearch.yml
   ansible.builtin.lineinfile:
     path: "{{ opensearch_install_dir }}/config/opensearch.yml"

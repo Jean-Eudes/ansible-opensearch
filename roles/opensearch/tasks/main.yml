@@ -11,6 +11,14 @@
   ansible.builtin.include_tasks: users.yml
   tags: [install, opensearch_install, opensearch_users]
 
+- name: OpenSearch Systemd
+  ansible.builtin.include_tasks: systemd.yml
+  tags: [install, opensearch_install, opensearch_systemd]
+
+- name: OpenSearch Verify
+  ansible.builtin.include_tasks: verify.yml
+  tags: [install, opensearch_install, opensearch_verify]
+
 - name: OpenSearch Rollback
   ansible.builtin.include_tasks: rollback.yml
   tags: [rollback, opensearch_rollback]
