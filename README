@@ -1,0 +1,25 @@
+# Ansible OpenSearch
+
+Ce projet permet d'installer et configurer OpenSearch.
+
+## Utilisation
+
+Pour lancer le playbook ansible via Podman, utilisez la commande suivante :
+
+```bash
+podman run --entrypoint ansible-playbook -v $(pwd):/root/platform sgconnect/ansible configure.yml -i env/local/inventory
+```
+
+Ou en utilisant le script fourni (nécessite que votre agent SSH soit lancé et contienne la clé nécessaire) :
+
+```bash
+./run-ansible.sh configure.yml -i env/local/inventory --tags install
+```
+
+### Rollback
+
+Pour annuler l'installation et supprimer les fichiers, utilisateurs et groupes créés :
+
+```bash
+./run-ansible.sh rollback.yml -i env/local/inventory --tags rollback
+```

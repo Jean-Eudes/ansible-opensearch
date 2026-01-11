@@ -1,0 +1,7 @@
+---
+- name: Rollback OpenSearch
+  hosts: monitoring
+  become: true
+  roles:
+    - role: opensearch
+  tags: [rollback, opensearch_rollback]

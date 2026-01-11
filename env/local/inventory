@@ -1,0 +1,5 @@
+[monitoring]
+192.168.122.183
+
+[local:children]
+monitoring

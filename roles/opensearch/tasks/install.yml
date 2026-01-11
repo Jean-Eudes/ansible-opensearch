@@ -1,0 +1,81 @@
+---
+- name: Create opensearch group
+  ansible.builtin.group:
+    name: "{{ opensearch_group }}"
+    state: present
+  tags: [install, opensearch_install]
+
+- name: Create opensearch user
+  ansible.builtin.user:
+    name: "{{ opensearch_user }}"
+    group: "{{ opensearch_group }}"
+    system: true
+    shell: /bin/false
+    state: present
+  tags: [install, opensearch_install]
+
+- name: Create installation directory
+  ansible.builtin.file:
+    path: "{{ opensearch_install_dir }}"
+    state: directory
+    owner: "{{ opensearch_user }}"
+    group: "{{ opensearch_group }}"
+    mode: '0755'
+  tags: [install, opensearch_install]
+  
+- name: Download and unarchive OpenSearch
+  ansible.builtin.unarchive:
+    src: "{{ opensearch_download_url }}"
+    dest: "{{ opensearch_install_dir }}"
+    remote_src: yes
+    extra_opts: [--strip-components=1]
+    owner: "{{ opensearch_user }}"
+    group: "{{ opensearch_group }}"
+    creates: "{{ opensearch_install_dir }}/bin/opensearch"
+  tags: [install, opensearch_install]
+
+- name: Set vm.max_map_count
+  ansible.builtin.sysctl:
+    name: vm.max_map_count
+    value: '262144'
+    state: present
+    reload: yes
+  tags: [install, opensearch_install, opensearch_sysctl]
+
+- name: Configure network.host in opensearch.yml
+  ansible.builtin.lineinfile:
+    path: "{{ opensearch_install_dir }}/config/opensearch.yml"
+    regexp: '^network.host:'
+    line: "network.host: {{ opensearch_network_host }}"
+  tags: [install, opensearch_install, opensearch_config]
+
+- name: Configure discovery.type in opensearch.yml
+  ansible.builtin.lineinfile:
+    path: "{{ opensearch_install_dir }}/config/opensearch.yml"
+    regexp: '^discovery.type:'
+    line: "discovery.type: {{ opensearch_discovery_type }}"
+  tags: [install, opensearch_install, opensearch_config]
+
+- name: Configure plugins.security.disabled in opensearch.yml
+  ansible.builtin.lineinfile:
+    path: "{{ opensearch_install_dir }}/config/opensearch.yml"
+    regexp: '^plugins.security.disabled:'
+    line: "plugins.security.disabled: {{ not opensearch_security_enabled | lower }}"
+  tags: [install, opensearch_install, opensearch_config]
+
+- name: Configure JVM heap size
+  ansible.builtin.lineinfile:
+    path: "{{ opensearch_install_dir }}/config/jvm.options"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+  loop:
+    - { regexp: '^-Xms', line: "-Xms{{ opensearch_heap_size }}" }
+    - { regexp: '^-Xmx', line: "-Xmx{{ opensearch_heap_size }}" }
+  tags: [install, opensearch_install, opensearch_config]
+
+- name: Set OPENSEARCH_JAVA_HOME in profile.d
+  ansible.builtin.copy:
+    dest: /etc/profile.d/opensearch.sh
+    content: "export OPENSEARCH_JAVA_HOME={{ opensearch_install_dir }}/jdk"
+    mode: '0644'
+  tags: [install, opensearch_install, opensearch_config]

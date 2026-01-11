@@ -1,0 +1,6 @@
+---
+- name: Install OpenSearch
+  hosts: monitoring
+  become: true
+  roles:
+    - role: opensearch

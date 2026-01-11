@@ -1,0 +1,8 @@
+---
+- name: OpenSearch Installation
+  ansible.builtin.include_tasks: install.yml
+  tags: [install, opensearch_install]
+
+- name: OpenSearch Rollback
+  ansible.builtin.include_tasks: rollback.yml
+  tags: [rollback, opensearch_rollback]
