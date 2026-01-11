@@ -1,0 +1,97 @@
+---
+- name: Create local certificates directory
+  ansible.builtin.file:
+    path: "{{ opensearch_certs_local_dir }}"
+    state: directory
+    mode: '0755'
+  delegate_to: localhost
+  tags: [install, opensearch_install, opensearch_certs]
+
+- name: Generate Root CA
+  block:
+    - name: Create root-ca-key.pem
+      ansible.builtin.command:
+        cmd: "openssl genrsa -out root-ca-key.pem 2048"
+        chdir: "{{ opensearch_certs_local_dir }}"
+        creates: root-ca-key.pem
+
+    - name: Create root-ca.pem
+      ansible.builtin.command:
+        cmd: "openssl req -new -x509 -sha256 -key root-ca-key.pem -subj '{{ opensearch_certs_root_subj }}' -out root-ca.pem -days {{ opensearch_certs_days }}"
+        chdir: "{{ opensearch_certs_local_dir }}"
+        creates: root-ca.pem
+  delegate_to: localhost
+  tags: [install, opensearch_install, opensearch_certs]
+
+- name: Generate Admin certificate
+  block:
+    - name: Create admin-key-temp.pem
+      ansible.builtin.command:
+        cmd: "openssl genrsa -out admin-key-temp.pem 2048"
+        chdir: "{{ opensearch_certs_local_dir }}"
+        creates: admin-key-temp.pem
+
+    - name: Convert admin-key-temp.pem to PKCS#8
+      ansible.builtin.command:
+        cmd: "openssl pkcs8 -inform PEM -outform PEM -in admin-key-temp.pem -topk8 -nocrypt -v1 PBE-SHA1-3DES -out admin-key.pem"
+        chdir: "{{ opensearch_certs_local_dir }}"
+        creates: admin-key.pem
+
+    - name: Create admin.csr
+      ansible.builtin.command:
+        cmd: "openssl req -new -key admin-key.pem -subj '{{ opensearch_certs_admin_subj }}' -out admin.csr"
+        chdir: "{{ opensearch_certs_local_dir }}"
+        creates: admin.csr
+
+    - name: Sign admin certificate
+      ansible.builtin.command:
+        cmd: "openssl x509 -req -in admin.csr -CA root-ca.pem -CAkey root-ca-key.pem -CAcreateserial -sha256 -out admin.pem -days {{ opensearch_certs_days }}"
+        chdir: "{{ opensearch_certs_local_dir }}"
+        creates: admin.pem
+  delegate_to: localhost
+  tags: [install, opensearch_install, opensearch_certs]
+
+- name: Generate Node certificate
+  block:
+    - name: Create node1-key-temp.pem
+      ansible.builtin.command:
+        cmd: "openssl genrsa -out node1-key-temp.pem 2048"
+        chdir: "{{ opensearch_certs_local_dir }}"
+        creates: node1-key-temp.pem
+
+    - name: Convert node1-key-temp.pem to PKCS#8
+      ansible.builtin.command:
+        cmd: "openssl pkcs8 -inform PEM -outform PEM -in node1-key-temp.pem -topk8 -nocrypt -v1 PBE-SHA1-3DES -out node1-key.pem"
+        chdir: "{{ opensearch_certs_local_dir }}"
+        creates: node1-key.pem
+
+    - name: Create node1.csr
+      ansible.builtin.command:
+        cmd: "openssl req -new -key node1-key.pem -subj '{{ opensearch_certs_node_subj }}' -out node1.csr"
+        chdir: "{{ opensearch_certs_local_dir }}"
+        creates: node1.csr
+
+    - name: Create node1.ext
+      ansible.builtin.copy:
+        dest: "{{ opensearch_certs_local_dir }}/node1.ext"
+        content: "subjectAltName=DNS:{{ opensearch_certs_node_dns }}"
+        mode: '0644'
+
+    - name: Sign node certificate
+      ansible.builtin.command:
+        cmd: "openssl x509 -req -in node1.csr -CA root-ca.pem -CAkey root-ca-key.pem -CAcreateserial -sha256 -out node1.pem -days {{ opensearch_certs_days }} -extfile node1.ext"
+        chdir: "{{ opensearch_certs_local_dir }}"
+        creates: node1.pem
+
+    - name: Cleanup temporary certificate files
+      ansible.builtin.file:
+        path: "{{ opensearch_certs_local_dir }}/{{ item }}"
+        state: absent
+      loop:
+        - admin-key-temp.pem
+        - admin.csr
+        - node1-key-temp.pem
+        - node1.csr
+        - node1.ext
+  delegate_to: localhost
+  tags: [install, opensearch_install, opensearch_certs]

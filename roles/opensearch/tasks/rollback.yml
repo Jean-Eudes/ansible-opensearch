@@ -30,3 +30,10 @@
     path: /etc/profile.d/opensearch.sh
     state: absent
   tags: [rollback, opensearch_rollback, opensearch_config_rollback]
+
+- name: Remove local certificates directory
+  ansible.builtin.file:
+    path: "{{ opensearch_certs_local_dir }}"
+    state: absent
+  delegate_to: localhost
+  tags: [rollback, opensearch_rollback, opensearch_certs_rollback]

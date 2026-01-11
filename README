@@ -23,3 +23,13 @@ Pour annuler l'installation et supprimer les fichiers, utilisateurs et groupes c
 ```bash
 ./run-ansible.sh rollback.yml -i env/local/inventory --tags rollback
 ```
+
+### Certificats
+
+Les certificats sont générés localement dans le répertoire `certs/` à la racine du projet.
+
+Pour générer uniquement les certificats :
+
+```bash
+./run-ansible.sh configure.yml -i env/local/inventory --tags opensearch_certs
+```
