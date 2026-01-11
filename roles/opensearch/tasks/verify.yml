@@ -1,19 +1,4 @@
 ---
-- name: Start OpenSearch in background
-  ansible.builtin.shell:
-    cmd: "nohup ./opensearch > opensearch.log 2>&1 &"
-    chdir: "{{ opensearch_install_dir }}/bin"
-  become: true
-  become_user: "{{ opensearch_user }}"
-  tags: [opensearch_verify]
-
-- name: Wait for OpenSearch to be available
-  ansible.builtin.wait_for:
-    port: 9200
-    host: localhost
-    timeout: 60
-  tags: [opensearch_verify]
-
 - name: Verify OpenSearch is up
   ansible.builtin.uri:
     url: "https://localhost:9200"
