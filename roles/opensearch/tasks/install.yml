@@ -79,3 +79,41 @@
     content: "export OPENSEARCH_JAVA_HOME={{ opensearch_install_dir }}/jdk"
     mode: '0644'
   tags: [install, opensearch_install, opensearch_config]
+
+- name: Upload certificates to remote host
+  ansible.builtin.copy:
+    src: "{{ opensearch_certs_local_dir }}/{{ item }}"
+    dest: "{{ opensearch_install_dir }}/config/{{ item }}"
+    owner: "{{ opensearch_user }}"
+    group: "{{ opensearch_group }}"
+    mode: '0600'
+  loop:
+    - root-ca.pem
+    - admin.pem
+    - admin-key.pem
+    - node1.pem
+    - node1-key.pem
+  tags: [install, opensearch_install, opensearch_certs_upload]
+
+- name: Configure Security SSL settings in opensearch.yml
+  ansible.builtin.blockinfile:
+    path: "{{ opensearch_install_dir }}/config/opensearch.yml"
+    marker: "# {mark} ANSIBLE MANAGED SECURITY SSL BLOCK"
+    block: |
+      plugins.security.ssl.transport.pemcert_filepath: {{ opensearch_install_dir }}/config/node1.pem
+      plugins.security.ssl.transport.pemkey_filepath: {{ opensearch_install_dir }}/config/node1-key.pem
+      plugins.security.ssl.transport.pemtrustedcas_filepath: {{ opensearch_install_dir }}/config/root-ca.pem
+      plugins.security.ssl.http.enabled: true
+      plugins.security.ssl.http.pemcert_filepath: {{ opensearch_install_dir }}/config/node1.pem
+      plugins.security.ssl.http.pemkey_filepath: {{ opensearch_install_dir }}/config/node1-key.pem
+      plugins.security.ssl.http.pemtrustedcas_filepath: {{ opensearch_install_dir }}/config/root-ca.pem
+      plugins.security.allow_default_init_securityindex: true
+      plugins.security.authcz.admin_dn:
+        - '{{ opensearch_certs_admin_subj_formatted | default("CN=A,OU=UNIT,O=ORG,L=TORONTO,ST=ONTARIO,C=CA") }}'
+      plugins.security.nodes_dn:
+        - '{{ opensearch_certs_node_subj_formatted | default("CN=node1.dns.a-record,OU=UNIT,O=ORG,L=TORONTO,ST=ONTARIO,C=CA") }}'
+      plugins.security.audit.type: internal_opensearch
+      plugins.security.enable_snapshot_restore_privilege: true
+      plugins.security.check_snapshot_restore_write_privileges: true
+      plugins.security.restapi.roles_enabled: ["all_access", "security_rest_api_access"]
+  tags: [install, opensearch_install, opensearch_config]

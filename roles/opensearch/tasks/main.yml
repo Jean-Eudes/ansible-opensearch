@@ -7,6 +7,10 @@
   ansible.builtin.include_tasks: certificates.yml
   tags: [install, opensearch_install, opensearch_certs]
 
+- name: OpenSearch Users
+  ansible.builtin.include_tasks: users.yml
+  tags: [install, opensearch_install, opensearch_users]
+
 - name: OpenSearch Rollback
   ansible.builtin.include_tasks: rollback.yml
   tags: [rollback, opensearch_rollback]

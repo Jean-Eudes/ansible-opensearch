@@ -16,3 +16,10 @@ opensearch_certs_admin_subj: "/C=CA/ST=ONTARIO/L=TORONTO/O=ORG/OU=UNIT/CN=A"
 opensearch_certs_node_subj: "/C=CA/ST=ONTARIO/L=TORONTO/O=ORG/OU=UNIT/CN=node1.dns.a-record"
 opensearch_certs_node_dns: "node1.dns.a-record"
 opensearch_certs_days: 730
+
+# Formatted subjects for opensearch.yml (DN order is often reversed in OpenSSL -subj vs what OpenSearch expects, 
+# but here we follow the doc's format: CN=...,OU=...,O=...,L=...,ST=...,C=... )
+opensearch_certs_admin_subj_formatted: "CN=A,OU=UNIT,O=ORG,L=TORONTO,ST=ONTARIO,C=CA"
+# User configuration
+opensearch_admin_password: "admin"
+opensearch_admin_hash: "" # If provided, will skip hash generation

@@ -1,0 +1,69 @@
+---
+- name: Make security scripts executable
+  ansible.builtin.file:
+    path: "{{ item }}"
+    mode: '0755'
+  loop:
+    - "{{ opensearch_install_dir }}/plugins/opensearch-security/tools/hash.sh"
+    - "{{ opensearch_install_dir }}/plugins/opensearch-security/tools/securityadmin.sh"
+  tags: [install, opensearch_install, opensearch_users]
+
+- name: Generate password hash
+  ansible.builtin.command:
+    cmd: "./hash.sh -p {{ opensearch_admin_password }}"
+    chdir: "{{ opensearch_install_dir }}/plugins/opensearch-security/tools"
+  environment:
+    OPENSEARCH_JAVA_HOME: "{{ opensearch_install_dir }}/jdk"
+  register: hash_output
+  when: opensearch_admin_hash == ""
+  changed_when: false
+  tags: [install, opensearch_install, opensearch_users]
+
+- name: Set admin hash variable
+  ansible.builtin.set_fact:
+    opensearch_actual_admin_hash: "{{ opensearch_admin_hash if opensearch_admin_hash != '' else hash_output.stdout_lines[-1] }}"
+  tags: [install, opensearch_install, opensearch_users]
+
+- name: Configure internal_users.yml
+  ansible.builtin.template:
+    src: internal_users.yml.j2
+    dest: "{{ opensearch_install_dir }}/config/opensearch-security/internal_users.yml"
+    owner: "{{ opensearch_user }}"
+    group: "{{ opensearch_group }}"
+    mode: '0600'
+  tags: [install, opensearch_install, opensearch_users]
+
+- name: Start OpenSearch for configuration
+  ansible.builtin.shell:
+    cmd: "nohup ./opensearch > opensearch.log 2>&1 &"
+    chdir: "{{ opensearch_install_dir }}/bin"
+  become_user: "{{ opensearch_user }}"
+  environment:
+    OPENSEARCH_JAVA_HOME: "{{ opensearch_install_dir }}/jdk"
+  tags: [install, opensearch_install, opensearch_users]
+
+- name: Wait for OpenSearch to be ready
+  ansible.builtin.wait_for:
+    port: 9200
+    timeout: 60
+  tags: [install, opensearch_install, opensearch_users]
+
+- name: Apply security configuration
+  ansible.builtin.command:
+    cmd: >
+      ./securityadmin.sh 
+      -cd {{ opensearch_install_dir }}/config/opensearch-security/ 
+      -cacert {{ opensearch_install_dir }}/config/root-ca.pem 
+      -cert {{ opensearch_install_dir }}/config/admin.pem 
+      -key {{ opensearch_install_dir }}/config/admin-key.pem 
+      -icl -nhnv
+    chdir: "{{ opensearch_install_dir }}/plugins/opensearch-security/tools"
+  environment:
+    OPENSEARCH_JAVA_HOME: "{{ opensearch_install_dir }}/jdk"
+  tags: [install, opensearch_install, opensearch_users]
+
+- name: Stop OpenSearch after configuration
+  ansible.builtin.shell:
+    cmd: "pkill -u {{ opensearch_user }} -f opensearch"
+  ignore_errors: yes
+  tags: [install, opensearch_install, opensearch_users]
