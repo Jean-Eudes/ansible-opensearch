@@ -25,12 +25,6 @@
     reload: yes
   tags: [rollback, opensearch_rollback, opensearch_sysctl_rollback]
 
-- name: Reset SELinux to enforcing
-  ansible.builtin.selinux:
-    policy: targeted
-    state: enforcing
-  tags: [rollback, opensearch_rollback, opensearch_selinux_rollback]
-
 - name: Remove OPENSEARCH_JAVA_HOME profile.d file
   ansible.builtin.file:
     path: /etc/profile.d/opensearch.sh

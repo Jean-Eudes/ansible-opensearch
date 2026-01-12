@@ -1,0 +1,4 @@
+---
+- name: Apply SELinux configuration
+  ansible.builtin.include_tasks: install.yml
+  tags: [selinux, prerequisite]

@@ -1,0 +1,7 @@
+---
+- name: Apply prerequisites
+  hosts: all
+  become: true
+  roles:
+    - role: selinux
+  tags: [prerequisite, selinux]
