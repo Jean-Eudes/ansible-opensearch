@@ -4,4 +4,5 @@
   become: true
   roles:
     - role: selinux
-  tags: [prerequisite, selinux]
+    - role: firewall
+  tags: [prerequisite, selinux, firewall]
